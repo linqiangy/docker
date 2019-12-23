@@ -1,0 +1,46 @@
+version: '3'
+services:
+  logdb:
+    image: yanglinqiang/logdb:v3
+    container_name: test-logdb
+    networks:
+      - test-net
+    depends_on:
+      - mysql
+    links:
+      - mysql:docker-db
+    volumes:
+      - ./logdb/conf/default.ini:/root/logdb/conf/default.ini
+    entrypoint: /root/entrypoint.sh -d docker-db:3306 -c '/root/start.sh'
+
+  mysql:
+    image: mysql:5.7
+    container_name: test-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=log_db
+      - MYSQL_USER=test
+      - MYSQL_PASSWORD=123456
+    ports:
+      - 33060:3306
+    networks:
+      - test-net
+    volumes:
+      - ./mysql/conf:/etc/mysql/conf.d
+      - ./mysql/data:/var/lib/mysql
+
+  php-fpm:
+    image: nanoninja/php-fpm:7.3.6
+    container_name: test-php
+    networks:
+      - test-net
+    depends_on:
+      - logdb
+    links:
+      - logdb:test-logdb
+    volumes:
+      - /Users/linqiangy/Projects/:/var/www/html
+
+networks:
+  test-net:
+    driver: bridge
